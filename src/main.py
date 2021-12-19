@@ -101,7 +101,7 @@ def setup_pretrained_models():
 
 	# the CPU held model *HAS* to be loaded first, if not when trying to load the model - which apparently uses the GPU while loading for some reason, maybe a default? -
 	# will run out of memory to load stuff
-	gptj_model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="/gptj_model/j6b_ckpt/m.pt"))
+	gptj_model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="gptj_model/j6b_ckpt/m.pt"))
 	gptj_model.to("cpu")
 
 
