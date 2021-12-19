@@ -7,10 +7,11 @@
 '
 
 # Install python prerequisites
-pip install --upgrade --force-reinstall git+https://github.com/arogozhnikov/einops.git
-pip install git+https://github.com/finetuneanon/transformers@gpt-neo-localattention3-rp-b
-pip install gdown
-pip install npu
+pip3 install torch==1.8.1+cu111 torchvision==0.9.1+cu111 torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+pip3 install --upgrade --force-reinstall git+https://github.com/arogozhnikov/einops.git
+pip3 install git+https://github.com/finetuneanon/transformers@gpt-neo-localattention3-rp-b
+pip3 install gdown
+pip3 install npu
 
 # GPT-J install and unpack
 gdown https://drive.google.com/uc?id=1VXXCMR_ETxOd3rxG4eXxS4-QA5NekB3H
