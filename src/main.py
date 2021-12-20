@@ -1,6 +1,6 @@
 import os
 
-from transformers import GPTNeoModel, GPTNeoForCausalLM, GPT2Tokenizer, GPTNeoConfig, AutoConfig
+from transformers import GPTNeoModel, GPTNeoForCausalLM, GPT2Tokenizer, GPTNeoConfig, AutoConfig, AutoModelForCausalLM
 import torch
 import npu
 import random
