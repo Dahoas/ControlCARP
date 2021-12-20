@@ -170,7 +170,7 @@ def carp_critique(prompts):
 	return carp_output
 
 def gptj_revise(prompts):
-	npu.api("Mj4C8b56cl3Nb27Axp_7568HNvLwK_5408GZdoGsz48", deployed=True)
+	npu.api("NEURO API KEY", deployed=True)
 	model_id = '60ca2a1e54f6ecb69867c72c'
 
 	untokenized = ""
