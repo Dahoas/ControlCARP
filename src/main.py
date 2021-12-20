@@ -83,6 +83,8 @@ prompts = [
 
 def setup_pretrained_models():
 	print("Running setup_pretrained_models")
+	global gptj_model
+	global model
 	# GPT-J 6B config
 	config = AutoConfig.from_pretrained("EleutherAI/gpt-neo-2.7B")
 	config.attention_layers = ["global"] * 28
@@ -134,11 +136,13 @@ def setup_pretrained_models():
 
 def setup_tokenizer():
 	print("Running setup_tokenizer")
+	global tokenizer
 	tokenizer = GPT2Tokenizer.from_pretrained("EleutherAI/gpt-neo-2.7B")
 	tokenizer.add_tokens(["[QUOTE]"])
 
 def establish_skippable_strings():
 	print("Running establish_skippable_strings")
+	global skippable_tokens
 	skippable_strings = []
 	# Setting up static words to skip
 	for i in range(1, 30):
@@ -268,6 +272,7 @@ def extract_revision(revision, prompts, carp_revision_prompt, gptj_revision_prom
 	return prompts
 
 def main():
+	global prompts
 	setup_pretrained_models()
 	setup_tokenizer()
 	establish_skippable_strings()
