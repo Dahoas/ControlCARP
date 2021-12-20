@@ -5,6 +5,27 @@ import torch
 import npu
 import random
 
+try:
+    from collections.abc import MutableMapping
+except ImportError:
+    from collections import MutableMapping
+
+def no_init(loading_code):
+    def dummy(self):
+        return
+    
+    modules = [torch.nn.Linear, torch.nn.Embedding, torch.nn.LayerNorm]
+    original = {}
+    for mod in modules:
+        original[mod] = mod.reset_parameters
+        mod.reset_parameters = dummy
+    
+    result = loading_code()
+    for mod in modules:
+        mod.reset_parameters = original[mod]
+    
+    return result
+
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 # Globals setup in functions
@@ -61,6 +82,7 @@ prompts = [
 ]
 
 def setup_pretrained_models():
+	print("Running setup_pretrained_models")
 	# GPT-J 6B config
 	config = AutoConfig.from_pretrained("EleutherAI/gpt-neo-2.7B")
 	config.attention_layers = ["global"] * 28
@@ -101,18 +123,22 @@ def setup_pretrained_models():
 
 	# the CPU held model *HAS* to be loaded first, if not when trying to load the model - which apparently uses the GPU while loading for some reason, maybe a default? -
 	# will run out of memory to load stuff
-	gptj_model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="gptj_model/j6b_ckpt/m.pt"))
+	#gptj_model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="gptj_model/j6b_ckpt/m.pt"))
+	gptj_model = no_init(lambda: AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-j-6B", revision='float16', low_cpu_mem_usage=True))
 	gptj_model.to("cpu")
 
 
-	model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="j6b_ckpt/m.pt"))
+	#model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="j6b_ckpt/m.pt"))
+	model = no_init(lambda: AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-j-6B", revision='float16', low_cpu_mem_usage=True))
 	model = model.to("cuda")
 
 def setup_tokenizer():
+	print("Running setup_tokenizer")
 	tokenizer = GPT2Tokenizer.from_pretrained("EleutherAI/gpt-neo-2.7B")
 	tokenizer.add_tokens(["[QUOTE]"])
 
 def establish_skippable_strings():
+	print("Running establish_skippable_strings")
 	skippable_strings = []
 	# Setting up static words to skip
 	for i in range(1, 30):
@@ -138,6 +164,7 @@ def establish_skippable_strings():
 	skippable_tokens = [ [st] for st in skippable_tokens]
 
 def carp_critique(prompts):
+	print("Running carp_critique")
 	untokenized = ""
 	for i in range(0, len(prompts)):
 		untokenized += "Passage: " + prompts[i]["Passage"] + "\n\n"
@@ -170,6 +197,7 @@ def carp_critique(prompts):
 	return carp_output
 
 def gptj_revise(prompts):
+	print("Running gptj_revise")
 	npu.api("NEURO API KEY", deployed=True)
 	model_id = '60ca2a1e54f6ecb69867c72c'
 
@@ -201,6 +229,7 @@ def gptj_revise(prompts):
 	return gptj_output
 
 def extract_carp_revision(prompts, output, carp_revision_prompt, gptj_revision_prompt, new_prompt_pos):
+	print("Running extract_carp_revision")
 	output = output.replace("<|endoftext|>", "")
 
 	rev_pos = output.rfind(carp_revision_prompt) + len(carp_revision_prompt)
@@ -217,6 +246,7 @@ def extract_carp_revision(prompts, output, carp_revision_prompt, gptj_revision_p
 	return prompts
 
 def extract_revision(revision, prompts, carp_revision_prompt, gptj_revision_prompt, new_prompt_pos):
+	print("Running extract_revision")
 	generated_text = revision[0]["generated_text"]
 	generated_text = generated_text.replace("rompt:", "")
 	#rev_pos = generated_text.rfind(gptj_revision_prompt) + len(gptj_revision_prompt)
