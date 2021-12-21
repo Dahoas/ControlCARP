@@ -86,6 +86,7 @@ def setup_pretrained_models():
 	global gptj_model
 	global model
 	# GPT-J 6B config
+	"""
 	config = AutoConfig.from_pretrained("EleutherAI/gpt-neo-2.7B")
 	config.attention_layers = ["global"] * 28
 	config.attention_types = [["global"], 28]
@@ -130,7 +131,7 @@ def setup_pretrained_models():
 	# honkbox version
 	#gptj_model = no_init(lambda: AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-j-6B", revision='float16', low_cpu_mem_usage=True))
 	#gptj_model.to("cpu")
-
+	"""
 
 	#model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="j6b_ckpt/m.pt"))
 	model = no_init(lambda: AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-j-6B", revision='float16', low_cpu_mem_usage=True))
