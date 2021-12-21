@@ -29,7 +29,7 @@ def no_init(loading_code):
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 # Globals setup in functions
-gptj_model = None
+gptj_model = None # currently commented out in favor of neuro
 model = None # CARP
 tokenizer = None
 skippable_tokens = []
@@ -125,9 +125,11 @@ def setup_pretrained_models():
 
 	# the CPU held model *HAS* to be loaded first, if not when trying to load the model - which apparently uses the GPU while loading for some reason, maybe a default? -
 	# will run out of memory to load stuff
+	# Notebook version
 	#gptj_model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="gptj_model/j6b_ckpt/m.pt"))
-	gptj_model = no_init(lambda: AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-j-6B", revision='float16', low_cpu_mem_usage=True))
-	gptj_model.to("cpu")
+	# honkbox version
+	#gptj_model = no_init(lambda: AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-j-6B", revision='float16', low_cpu_mem_usage=True))
+	#gptj_model.to("cpu")
 
 
 	#model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="j6b_ckpt/m.pt"))
