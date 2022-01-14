@@ -6,30 +6,32 @@ import npu
 import random
 
 try:
-    from collections.abc import MutableMapping
+	from collections.abc import MutableMapping
 except ImportError:
-    from collections import MutableMapping
+	from collections import MutableMapping
 
 def no_init(loading_code):
-    def dummy(self):
-        return
-    
-    modules = [torch.nn.Linear, torch.nn.Embedding, torch.nn.LayerNorm]
-    original = {}
-    for mod in modules:
-        original[mod] = mod.reset_parameters
-        mod.reset_parameters = dummy
-    
-    result = loading_code()
-    for mod in modules:
-        mod.reset_parameters = original[mod]
-    
-    return result
+	def dummy(self):
+		return
+
+	modules = [torch.nn.Linear, torch.nn.Embedding, torch.nn.LayerNorm]
+	original = {}
+	for mod in modules:
+		original[mod] = mod.reset_parameters
+		mod.reset_parameters = dummy
+
+	result = loading_code()
+	for mod in modules:
+		mod.reset_parameters = original[mod]
+
+	return result
 
 os.environ['CUDA_LAUNCH_BLOCKING'] = "1"
 
 # Globals setup in functions
+#gptj model in neuro is api
 gptj_model = None # currently commented out in favor of neuro
+#This still seems to be gptj?
 model = None # CARP
 tokenizer = None
 skippable_tokens = []
@@ -85,55 +87,8 @@ def setup_pretrained_models():
 	print("Running setup_pretrained_models")
 	global gptj_model
 	global model
-	# GPT-J 6B config
-	"""
-	config = AutoConfig.from_pretrained("EleutherAI/gpt-neo-2.7B")
-	config.attention_layers = ["global"] * 28
-	config.attention_types = [["global"], 28]
-	config.num_layers = 28
-	config.num_heads = 16
-	config.hidden_size = 256 * config.num_heads
-	config.vocab_size = 50400
-	config.rotary = True
-	config.rotary_dim = 64
-	config.jax = True 
-
-	try:
-	    from collections.abc import MutableMapping
-	except ImportError:
-	    from collections import MutableMapping
-
-	class Checkpoint(MutableMapping):
-	    def __init__(self, checkpoint_entry="j6b_ckpt/m.pt"):
-	        self.checkpoint = torch.load(checkpoint_entry, map_location="cpu")
-	    def __len__(self):
-	        return len(self.checkpoint)
-	    def __getitem__(self, key):
-	        return torch.load(self.checkpoint[key], map_location="cpu")
-	    def __setitem__(self, key, value):
-	        return
-	    def __delitem__(self, key, value):
-	        return
-	    def keys(self):
-	        return self.checkpoint.keys()
-	    def __iter__(self):
-	        for key in self.checkpoint:
-	            yield (key, self.__getitem__(key))
-	    def __copy__(self):
-	        return Checkpoint()
-	    def copy(self):
-	        return Checkpoint()
-
-	# the CPU held model *HAS* to be loaded first, if not when trying to load the model - which apparently uses the GPU while loading for some reason, maybe a default? -
-	# will run out of memory to load stuff
-	# Notebook version
-	#gptj_model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="gptj_model/j6b_ckpt/m.pt"))
-	# honkbox version
-	#gptj_model = no_init(lambda: AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-j-6B", revision='float16', low_cpu_mem_usage=True))
-	#gptj_model.to("cpu")
-	"""
-
 	#model = GPTNeoForCausalLM.from_pretrained(pretrained_model_name_or_path=None, config=config, state_dict=Checkpoint(checkpoint_entry="j6b_ckpt/m.pt"))
+	#Why does carp seem to be using Neo?
 	model = no_init(lambda: AutoModelForCausalLM.from_pretrained("EleutherAI/gpt-j-6B", revision='float16', low_cpu_mem_usage=True))
 	model = model.to("cuda")
 
@@ -149,22 +104,22 @@ def establish_skippable_strings():
 	skippable_strings = []
 	# Setting up static words to skip
 	for i in range(1, 30):
-	  skippable_strings.append("_" * i);
+		skippable_strings.append("_" * i);
 	for i in range(2, 30):
-	  skippable_strings.append("?" * i);
+		skippable_strings.append("?" * i);
 	for i in range(1, 30):
-	  skippable_strings.append("Sam" + str(i) );
+		skippable_strings.append("Sam" + str(i) );
 	for i in range(3, 30):
-	  skippable_strings.append("." + str(i) );
+		skippable_strings.append("." + str(i) );
 	skippable_strings.append("\\n")
 	skippable_strings.append("\n")
 
 	quote_idx = len(tokenizer)-1
 	skippable_tokens = [18559, 59, quote_idx]
 	for ss in skippable_strings:
-	  tokens = tokenizer(ss, add_prefix_space=True).input_ids
-	  for t in tokens:
-	    skippable_tokens.append(t)
+		tokens = tokenizer(ss, add_prefix_space=True).input_ids
+		for t in tokens:
+			skippable_tokens.append(t)
 
 	# Remove duplicates and wrap each element in a list
 	skippable_tokens = list(dict.fromkeys(skippable_tokens))
@@ -177,18 +132,19 @@ def carp_critique(prompts):
 		untokenized += "Passage: " + prompts[i]["Passage"] + "\n\n"
 		untokenized += "Critique: " + prompts[i]["Critique"] + "\n\n"
 		#if i < len(prompts) - 1:
+		#Why is this included?
 		untokenized +=  prompts[i]["Revision"] + "\n\n"
 
 	toks = tokenizer.encode_plus(untokenized, return_tensors="pt").to("cuda")
 
-	model.config.max_length=2048
+	model.config.max_length=1024
 	out = model.generate(
-		**toks, 
-		num_beams = 4, 
-		repetition_penalty = 1.2, 
-		no_repeat_ngram_size = 4, 
-		early_stopping = True, 
-		min_length = len(toks['input_ids'][0]) + 30, 
+		**toks,
+		num_beams = 3,
+		repetition_penalty = 1.2,
+		no_repeat_ngram_size = 4,
+		early_stopping = True,
+		min_length = len(toks['input_ids'][0]) + 30,
 		bad_words_ids = skippable_tokens,
 		num_return_sequences = 4
 	)
@@ -278,8 +234,10 @@ def main():
 	global prompts
 	setup_pretrained_models()
 	setup_tokenizer()
+	#Skippable in what?
 	establish_skippable_strings()
 
+	#This is the iterative revision procedure?
 	for i in range(0, 2):
 		# CARP
 		carp_output = carp_critique(prompts)
@@ -294,4 +252,4 @@ def main():
 		print("Iteration:", i, "Revision:", prompts[-1]["Revision"])
 
 if __name__=="__main__":
-    main()
+	main()
