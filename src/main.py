@@ -146,7 +146,7 @@ def carp_critique(prompts):
 		early_stopping = True,
 		min_length = len(toks['input_ids'][0]) + 30,
 		bad_words_ids = skippable_tokens,
-		num_return_sequences = 4
+		num_return_sequences = 3
 	)
 
 	# TODO: use this once back and forth is proven out
